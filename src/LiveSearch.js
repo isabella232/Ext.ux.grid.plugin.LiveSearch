@@ -6,6 +6,14 @@ Ext.define('Ext.ux.grid.plugin.LiveSearch', {
 
     alias: ['plugin.gridlivesearch', 'plugin.livesearch'],
 
+    uses: [
+        'Ext.Array',
+        'Ext.String',
+        'Ext.Function',
+        'Ext.util.Format',
+        'Ext.dom.Element'
+    ],
+
     config: {
         /**
          * @cfg {String} searchValue
@@ -327,9 +335,13 @@ Ext.define('Ext.ux.grid.plugin.LiveSearch', {
 
                     if (!cellHTML) return;
 
-                    cellHTML = cellHTML.replace(me.tagsRe, me.tagsProtect);
+                    if (column.producesHTML) {
+                        cellHTML = cellHTML.replace(me.tagsRe, me.tagsProtect);
+                    } else {
+                        cellHTML = Ext.htmlDecode(cellHTML);
+                    }
 
-                    if (cell) {
+                    if (cell && column.producesHTML) {
                         matches = cellHTML.match(me.tagsRe);
                     }
 
@@ -345,7 +357,7 @@ Ext.define('Ext.ux.grid.plugin.LiveSearch', {
                             seen = true;
                         }
 
-                        return cell ? '<span class="' + me.matchCls + '">' + m + '</span>' : null;
+                        return cell ? '<span class="' + me.matchCls + '">' + Ext.htmlEncode(m) + '</span>' : null;
                     });
 
                     if (!cell) return;
@@ -354,6 +366,10 @@ Ext.define('Ext.ux.grid.plugin.LiveSearch', {
                     Ext.each(matches, function(match) {
                         cellHTML = cellHTML.replace(me.tagsProtect, match);
                     });
+
+                    if (!(seen || column.producesHTML)) {
+                        cellHTML = Ext.htmlEncode(cellHTML);
+                    }
 
                     // update cell html
                     cell.innerHTML = cellHTML;
@@ -407,12 +423,16 @@ Ext.define('Ext.ux.grid.plugin.LiveSearch', {
 
             if (!cell) return;
 
-            matches  = cell.innerHTML.match(this.tagsRe);
-            cellHTML = cell.innerHTML.replace(this.tagsRe, this.tagsProtect);
+            if (column.producesHTML) {
+                matches  = cell.innerHTML.match(this.tagsRe);
+                cellHTML = cell.innerHTML.replace(this.tagsRe, this.tagsProtect);
+            } else {
+                cellHTML = Ext.htmlDecode(cell.innerHTML);
+            }
 
             // populate indexes array, set currentIndex, and replace wrap matched string in a span
             cellHTML = cellHTML.replace(this.searchRegExp, function(m) {
-                return '<span class="' + matchCls + '">' + m + '</span>';
+                return '<span class="' + matchCls + '">' + Ext.htmlEncode(m) + '</span>';
             });
 
             // restore protected tags
